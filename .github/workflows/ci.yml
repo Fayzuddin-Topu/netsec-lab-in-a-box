@@ -24,4 +24,27 @@ jobs:
         run: |
           pip install -e ./grader
           pytest -q
+  integration-lite:
+    runs-on: ubuntu-latest
+    needs: [lint-and-test]
+    steps:
+      - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Generate tiny test PCAP
+        run: |
+          pip install --quiet --upgrade pip
+          pip install --quiet scapy
+          python scripts/generate_tiny_pcap.py pcaps/input.pcap
+
+      - name: Build & run lite stack (no UI)
+        run: |
+          docker compose -f compose/docker-compose.lite.yml up --build --no-color
+
+      - name: Assert logs exist and are non-empty
+        run: |
+          test -s logs/zeek/conn.log
+          test -s logs/suricata/eve.json

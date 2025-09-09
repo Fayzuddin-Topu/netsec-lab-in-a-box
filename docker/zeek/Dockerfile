@@ -1,5 +1,5 @@
-FROM debian:stable-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates bash && rm -rf /var/lib/apt/lists/*
-# Step 2 will add pinned Zeek. Placeholder only.
+# Pinned Zeek LTS (multi-arch)
+FROM zeek/zeek:8.0.1
+# Ensure both common install prefixes are on PATH
+ENV PATH="/usr/local/zeek/bin:/opt/zeek/bin:${PATH}"
 WORKDIR /work
-

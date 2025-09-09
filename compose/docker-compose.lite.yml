@@ -2,22 +2,27 @@ name: netsec-lab-lite
 services:
   zeek:
     build: ../docker/zeek
-    command: ["bash","-lc","echo 'zeek placeholder; Step 2 will process pcaps' && sleep 2"]
+    working_dir: /var/log/zeek
+    # Run Zeek directly; logs write to working_dir.
+    command: ["/usr/local/zeek/bin/zeek", "-r", "/pcaps/input.pcap", "local"]
     volumes:
       - ../pcaps:/pcaps:ro
       - ../logs/zeek:/var/log/zeek
+
   suricata:
     build: ../docker/suricata
-    command: ["bash","-lc","echo 'suricata placeholder; Step 2 will process pcaps' && sleep 2"]
+    # Run Suricata directly; -l creates/writes the directory we mount.
+    command: ["suricata", "-r", "/pcaps/input.pcap", "-k", "none", "-l", "/var/log/suricata"]
     volumes:
       - ../pcaps:/pcaps:ro
       - ../logs/suricata:/var/log/suricata
+
   notebooks:
     build: ../docker/notebooks
+    profiles: ["ui"]
     ports: ["8888:8888"]
     environment:
       - JUPYTER_TOKEN=netsec
     volumes:
       - ../labs:/home/jovyan/labs:ro
       - ../logs:/home/jovyan/logs:ro
-

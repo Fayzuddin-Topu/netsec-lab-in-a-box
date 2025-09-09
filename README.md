@@ -16,4 +16,3 @@ This is the initial scaffold. Containers and datasets arrive in the next steps.
 - ⏳ Full mode (OpenSearch + Dashboards)
 
 See `docs/` and `CHANGELOG.md`.
-

@@ -8,11 +8,10 @@ help:
 	@echo "  make verify                # dataset checksum verify (later)"
 
 demo:
-	cd compose && docker compose -f docker-compose.$(MODE).yml up --build
+	cd compose && docker compose --profile ui -f docker-compose.$(MODE).yml up --build
 
 clean:
 	cd compose && docker compose -f docker-compose.$(MODE).yml down -v
 
 verify:
 	./scripts/verify_checksums.sh
-
