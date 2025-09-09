@@ -46,7 +46,7 @@ jobs:
 
       - name: Install grader & grade sample answers
         run: |
-	  pip install -e ./grader
+	        pip install -e ./grader
           labgrade labs/01_beacon labs/01_beacon/answers.sample.yml --logs ./logs
 
       - name: Assert logs exist and are non-empty
