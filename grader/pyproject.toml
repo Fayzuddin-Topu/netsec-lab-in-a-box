@@ -14,4 +14,3 @@ license = { text = "Apache-2.0" }
 
 [project.scripts]
 labgrade = "labgrader.cli:main"
-
