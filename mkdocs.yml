@@ -3,3 +3,5 @@ theme:
   name: material
 nav:
   - Home: index.md
+  - Labs:
+      - Beacon Hunt: labs/beacon.md

@@ -1,0 +1,9 @@
+lab: "01_beacon"
+checks:
+  min_count: 5
+  cv_threshold: 0.20        # coefficient of variation cutoff for candidates
+  period_tolerance_pct: 0.10
+  required_top_n: 3
+grading:
+  per_item_points: 33.34     # 3 x 33.34 ≈ 100
+  pass_threshold: 100        # require all three correct in v1

@@ -34,15 +34,20 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Generate tiny test PCAP
+      - name: Generate Lab 01 beacon PCAP
         run: |
           pip install --quiet --upgrade pip
           pip install --quiet scapy
-          python scripts/generate_tiny_pcap.py pcaps/input.pcap
+          python scripts/make_beacon_pcap.py pcaps/input.pcap
 
       - name: Build & run lite stack (no UI)
         run: |
           docker compose -f compose/docker-compose.lite.yml up --build --no-color
+
+      - name: Install grader & grade sample answers
+        run: |
+	        pip install -e ./grader
+          labgrade labs/01_beacon labs/01_beacon/answers.sample.yml --logs ./logs
 
       - name: Assert logs exist and are non-empty
         run: |
