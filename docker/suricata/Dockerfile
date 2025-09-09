@@ -1,5 +1,4 @@
-FROM debian:stable-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates bash && rm -rf /var/lib/apt/lists/*
-# Step 2 will add pinned Suricata. Placeholder only.
+# Pinned Suricata 7.x (multi-arch)
+FROM jasonish/suricata:7.0.11
+# Default config at /etc/suricata/suricata.yaml includes eve.json output.
 WORKDIR /work
-
