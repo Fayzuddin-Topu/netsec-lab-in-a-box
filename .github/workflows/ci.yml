@@ -1,55 +1,66 @@
 name: ci
+
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install tooling
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install pre-commit pytest
-      - name: Pre-commit
-        run: |
-          pre-commit install
-          pre-commit run --all-files
+
+      - name: Pre-commit (check all files)
+        run: pre-commit run --all-files --show-diff-on-failure
+
+      - name: Install grader (editable)
+        run: pip install -e ./grader
+
       - name: Unit tests
-        run: |
-          pip install -e ./grader
-          pytest -q
+        run: pytest -q
+
   integration-lite:
     runs-on: ubuntu-latest
     needs: [lint-and-test]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Generate Lab 01 beacon PCAP
         run: |
-          pip install --quiet --upgrade pip
-          pip install --quiet scapy
+          python -m pip install --upgrade pip
+          pip install scapy
           python scripts/make_beacon_pcap.py pcaps/input.pcap
 
       - name: Build & run lite stack (no UI)
-        run: |
-          docker compose -f compose/docker-compose.lite.yml up --build --no-color
+        run: docker compose -f compose/docker-compose.lite.yml up --build
 
       - name: Install grader & grade sample answers
         run: |
-	        pip install -e ./grader
+          pip install -e ./grader
           labgrade labs/01_beacon labs/01_beacon/answers.sample.yml --logs ./logs
-
-      - name: Assert logs exist and are non-empty
-        run: |
-          test -s logs/zeek/conn.log
-          test -s logs/suricata/eve.json

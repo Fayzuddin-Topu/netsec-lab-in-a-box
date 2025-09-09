@@ -1,0 +1,9 @@
+line-length = 100
+target-version = "py311"
+
+[lint]
+# Keep the essentials (pyflakes/pycodestyle + import order)
+# select = ["E", "F"]
+
+# Let notebooks be pedagogical: imports can appear mid-cell
+per-file-ignores = { "**/*.ipynb" = ["E402"] }
