@@ -1,0 +1,23 @@
+# Byte-compiled / caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Notebooks/runtime
+.ipynb_checkpoints/
+.notebooks/
+*.swp
+
+# Local logs & data
+logs/
+pcaps/*.pcap
+pcaps/checksums.sha256
+
+# Build artifacts
+dist/
+build/
+
+# VS Code, OS junk
+.vscode/
+.DS_Store
+

@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+title: NetSec Lab-in-a-Box
+message: Please cite this project if you use it for teaching or research.
+authors:
+  - family-names: Topu
+    given-names: Fayzuddin
+license: Apache-2.0
+version: 1.0.0
+
