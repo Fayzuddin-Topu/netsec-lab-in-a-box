@@ -5,4 +5,3 @@ if [[ -f "pcaps/checksums.sha256" ]]; then
 else
   echo "No checksums yet (expected before datasets)."
 fi
-
