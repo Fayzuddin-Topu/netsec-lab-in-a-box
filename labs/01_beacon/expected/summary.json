@@ -1,0 +1,9 @@
+{
+  "dataset": "synthetic_beacons_v1",
+  "top_beacons": [
+    {"endpoint": "203.0.113.55:443", "period_sec": 60, "count": 10},
+    {"endpoint": "198.51.100.9:80",  "period_sec": 30, "count": 12},
+    {"endpoint": "203.0.113.99:22",  "period_sec": 45, "count": 8}
+  ],
+  "notes": "Deterministic Scapy generator; timestamps base at 1700000000.0"
+}

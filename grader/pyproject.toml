@@ -7,10 +7,21 @@ name = "labgrader"
 version = "0.0.1"
 description = "Autograder CLI for NetSec Lab-in-a-Box (stub)"
 requires-python = ">=3.11"
-dependencies = ["jsonschema>=4.20.0"]
+dependencies = [
+	"jsonschema>=4.20.0",
+	"PyYAML>=6.0",
+	"pandas>=2.0.0",
+	"numpy>=1.26.0"
+]
 authors = [{ name = "Your Name" }]
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "Apache-2.0" }
 
 [project.scripts]
 labgrade = "labgrader.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["labgrader"]
+
+[tool.hatch.build.targets.sdist]
+include = ["labgrader/**", "pyproject.toml", "README.md"]

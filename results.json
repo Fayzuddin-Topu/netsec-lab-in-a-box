@@ -1,0 +1,51 @@
+{
+  "score": 66.68,
+  "passed": false,
+  "details": [
+    {
+      "endpoint": "203.0.113.55:443",
+      "ok": false,
+      "period": {
+        "answer": 60.0,
+        "ref": 60.0,
+        "tol_pct": 0.1,
+        "ok": true
+      },
+      "count": {
+        "answer": 11,
+        "ref": 10,
+        "ok": false
+      }
+    },
+    {
+      "endpoint": "198.51.100.9:80",
+      "ok": true,
+      "period": {
+        "answer": 30.0,
+        "ref": 30.0,
+        "tol_pct": 0.1,
+        "ok": true
+      },
+      "count": {
+        "answer": 12,
+        "ref": 12,
+        "ok": true
+      }
+    },
+    {
+      "endpoint": "203.0.113.99:22",
+      "ok": true,
+      "period": {
+        "answer": 45.0,
+        "ref": 45.0,
+        "tol_pct": 0.1,
+        "ok": true
+      },
+      "count": {
+        "answer": 8,
+        "ref": 8,
+        "ok": true
+      }
+    }
+  ]
+}
