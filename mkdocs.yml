@@ -1,0 +1,6 @@
+site_name: NetSec Lab-in-a-Box
+theme:
+  name: material
+nav:
+  - Home: index.md
+

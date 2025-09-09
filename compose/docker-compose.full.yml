@@ -1,0 +1,32 @@
+name: netsec-lab-full
+services:
+  zeek:
+    build: ../docker/zeek
+  suricata:
+    build: ../docker/suricata
+  notebooks:
+    build: ../docker/notebooks
+    ports: ["8888:8888"]
+    environment:
+      - JUPYTER_TOKEN=netsec
+    volumes:
+      - ../labs:/home/jovyan/labs:ro
+      - ../logs:/home/jovyan/logs:ro
+  vector:
+    build: ../docker/vector
+    environment:
+      - OPENSEARCH_URL=http://opensearch:9200
+    volumes:
+      - ../logs:/logs:ro
+  opensearch:
+    image: opensearchproject/opensearch:PINNED   # Step 9 will pin
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+    ports: ["9200:9200"]
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:PINNED
+    ports: ["5601:5601"]
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+

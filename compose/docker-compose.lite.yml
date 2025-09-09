@@ -1,0 +1,23 @@
+name: netsec-lab-lite
+services:
+  zeek:
+    build: ../docker/zeek
+    command: ["bash","-lc","echo 'zeek placeholder; Step 2 will process pcaps' && sleep 2"]
+    volumes:
+      - ../pcaps:/pcaps:ro
+      - ../logs/zeek:/var/log/zeek
+  suricata:
+    build: ../docker/suricata
+    command: ["bash","-lc","echo 'suricata placeholder; Step 2 will process pcaps' && sleep 2"]
+    volumes:
+      - ../pcaps:/pcaps:ro
+      - ../logs/suricata:/var/log/suricata
+  notebooks:
+    build: ../docker/notebooks
+    ports: ["8888:8888"]
+    environment:
+      - JUPYTER_TOKEN=netsec
+    volumes:
+      - ../labs:/home/jovyan/labs:ro
+      - ../logs:/home/jovyan/logs:ro
+
