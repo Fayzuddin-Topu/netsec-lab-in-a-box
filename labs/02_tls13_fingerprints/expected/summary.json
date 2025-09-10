@@ -1,0 +1,9 @@
+{
+  "dataset": "synthetic_tls13_v1",
+  "alpn_counts": {
+    "h2": 12,
+    "http/1.1": 8,
+    "acme-tls/1": 2
+  },
+  "notes": "Anomaly threshold share<0.15 → 'acme-tls/1' is anomalous"
+}

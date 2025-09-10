@@ -12,10 +12,11 @@ services:
   suricata:
     build: ../docker/suricata
     # Run Suricata directly; -l creates/writes the directory we mount.
-    command: ["suricata", "-r", "/pcaps/input.pcap", "-k", "none", "-l", "/var/log/suricata"]
+    command: ["suricata", "-c", "/etc/suricata/suricata.yaml", "-r", "/pcaps/input.pcap", "-k", "none", "-l", "/var/log/suricata"]
     volumes:
       - ../pcaps:/pcaps:ro
       - ../logs/suricata:/var/log/suricata
+      - ../docker/suricata/suricata.yaml:/etc/suricata/suricata.yaml:ro
 
   notebooks:
     build: ../docker/notebooks

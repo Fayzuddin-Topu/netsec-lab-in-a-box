@@ -1,0 +1,3 @@
+top_ja3: []  # optional for v1 grading
+anomalous_alpn:
+  - "acme-tls/1"

@@ -1,0 +1,28 @@
+
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Lab 02 TLS answers",
+  "type": "object",
+  "required": ["anomalous_alpn"],
+  "additionalProperties": false,
+  "properties": {
+    "top_ja3": {
+      "type": "array",
+      "description": "Optional in v1 grading; include if you computed it.",
+      "items": {
+        "type": "object",
+        "required": ["hash", "count"],
+        "properties": {
+          "hash": {"type": "string", "minLength": 16},
+          "count": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "anomalous_alpn": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  }
+}

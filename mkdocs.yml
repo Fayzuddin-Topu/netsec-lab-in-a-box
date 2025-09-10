@@ -5,3 +5,4 @@ nav:
   - Home: index.md
   - Labs:
       - Beacon Hunt: labs/beacon.md
+      - TLS 1.3 fingerprints: labs/tls13.md

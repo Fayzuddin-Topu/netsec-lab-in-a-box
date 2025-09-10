@@ -23,4 +23,10 @@ docker compose -f compose/docker-compose.lite.yml up --build
 python3 -m pip install -e ./grader
 labgrade labs/01_beacon labs/01_beacon/answers.sample.yml --logs ./logs
 
-See `docs/` and `CHANGELOG.md`.
+## Lab 02 quickstart (lite)
+```bash
+python3 -m pip install scapy
+python3 scripts/make_tls13_pcap.py pcaps/input.pcap
+docker compose -f compose/docker-compose.lite.yml up --build
+python3 -m pip install -e ./grader
+labgrade labs/02_tls13_fingerprints labs/02_tls13_fingerprints/answers.sample.yml --logs ./logs
