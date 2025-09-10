@@ -1,31 +1,94 @@
 name: netsec-lab-full
 services:
+  # --- Parsers (same pattern as lite; Zeek JSON for Vector) ---
   zeek:
     build: ../docker/zeek
+    working_dir: /var/log/zeek
+    command:
+      [
+        "/usr/local/zeek/bin/zeek",
+        "-r", "/pcaps/input.pcap",
+        "-e", "redef LogAscii::use_json=T",
+        "local"
+      ]
+    environment:
+      - ZEEK_DEFAULT_LOG_FORMAT=json
+    volumes:
+      - ../pcaps:/pcaps:ro
+      - ../logs/zeek:/var/log/zeek
+    restart: "no"   # runs to completion, then exits cleanly
+
   suricata:
     build: ../docker/suricata
+    command:
+      [
+        "suricata",
+        "-c", "/etc/suricata/suricata.yaml",
+        "-r", "/pcaps/input.pcap",
+        "-k", "none",
+        "-l", "/var/log/suricata"
+      ]
+    volumes:
+      - ../pcaps:/pcaps:ro
+      - ../logs/suricata:/var/log/suricata
+      - ../docker/suricata/suricata.yaml:/etc/suricata/suricata.yaml:ro
+    restart: "no"   # runs to completion, then exits cleanly
+
+  # --- OpenSearch (single node, security plugin truly disabled) ---
+  opensearch:
+    image: opensearchproject/opensearch:2.12.0
+    environment:
+      - discovery.type=single-node
+      # Fully disable the security plugin and the demo installer so no password is required
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    restart: "unless-stopped"
+
+  # --- Dashboards (connect to OpenSearch service on the internal network) ---
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:2.12.0
+    environment:
+      - 'OPENSEARCH_HOSTS=["http://opensearch:9200"]'
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+      - server.host=0.0.0.0
+    ports:
+      - "5601:5601"
+    depends_on:
+      - opensearch
+    restart: "unless-stopped"
+
+  # --- Vector (explicit config, target the internal opensearch service) ---
+  vector:
+    build: ../docker/vector
+    environment:
+      - VECTOR_LOG=info
+      - VECTOR_CONFIG=/etc/vector/vector.toml
+    command: ["--config", "/etc/vector/vector.toml"]
+    volumes:
+      - ../logs:/logs:ro
+      - ../docker/vector/vector.toml:/etc/vector/vector.toml:ro
+    depends_on:
+      - opensearch
+    restart: "unless-stopped"
+
+  # Optional: include the notebook UI with `--profile ui`
   notebooks:
     build: ../docker/notebooks
+    profiles: ["ui"]
     ports: ["8888:8888"]
     environment:
       - JUPYTER_TOKEN=netsec
     volumes:
       - ../labs:/home/jovyan/labs:ro
       - ../logs:/home/jovyan/logs:ro
-  vector:
-    build: ../docker/vector
-    environment:
-      - OPENSEARCH_URL=http://opensearch:9200
-    volumes:
-      - ../logs:/logs:ro
-  opensearch:
-    image: opensearchproject/opensearch:PINNED   # Step 9 will pin
-    environment:
-      - discovery.type=single-node
-      - bootstrap.memory_lock=true
-    ports: ["9200:9200"]
-  dashboards:
-    image: opensearchproject/opensearch-dashboards:PINNED
-    ports: ["5601:5601"]
-    environment:
-      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+    restart: "unless-stopped"
+
+volumes:
+  opensearch-data:

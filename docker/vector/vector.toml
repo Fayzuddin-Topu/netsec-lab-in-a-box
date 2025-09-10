@@ -1,0 +1,55 @@
+# =========================
+# Suricata: read eve.json
+# =========================
+[sources.suricata_src]
+type = "file"
+include = ["/logs/suricata/eve.json"]
+read_from = "beginning"
+
+[transforms.suricata_remap]
+type = "remap"
+inputs = ["suricata_src"]
+source = '''
+event, err = parse_json(.message)
+if err != null { abort }
+. = event
+if exists(.timestamp) {
+  . = merge!(., { "@timestamp": .timestamp })
+}
+'''
+
+[sinks.os_suricata]
+type = "elasticsearch"
+inputs = ["suricata_remap"]
+endpoints = ["http://opensearch:9200"]
+mode = "bulk"
+[sinks.os_suricata.bulk]
+index = "suricata-%Y.%m.%d"
+
+# =========================
+# Zeek: read JSON logs
+# =========================
+[sources.zeek_src]
+type = "file"
+include = ["/logs/zeek/*.log"]
+read_from = "beginning"
+
+[transforms.zeek_remap]
+type = "remap"
+inputs = ["zeek_src"]
+source = '''
+event, err = parse_json(.message)
+if err != null { abort }
+. = event
+if exists(.ts) {
+  . = merge!(., { "@timestamp": to_string!(.ts) })
+}
+'''
+
+[sinks.os_zeek]
+type = "elasticsearch"
+inputs = ["zeek_remap"]
+endpoints = ["http://opensearch:9200"]
+mode = "bulk"
+[sinks.os_zeek.bulk]
+index = "zeek-%Y.%m.%d"
