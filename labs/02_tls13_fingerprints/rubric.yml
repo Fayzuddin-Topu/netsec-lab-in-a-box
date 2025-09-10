@@ -1,0 +1,5 @@
+lab: "02_tls13_fingerprints"
+checks:
+  alpn_min_share: 0.15   # tokens with share < 15% are considered anomalous
+grading:
+  pass_threshold: 1       # require exact anomaly set match for full pass

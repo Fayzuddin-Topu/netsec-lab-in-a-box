@@ -1,0 +1,47 @@
+%YAML 1.1
+---
+# Minimal Suricata config for offline PCAP parsing with EVE (flow, dns, tls).
+# Suitable for our lab containers.
+
+default-log-dir: /var/log/suricata
+
+logging:
+  default-log-level: info
+  outputs:
+    - file:
+        enabled: yes
+        filename: suricata.log
+        level: info
+
+outputs:
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      # Keep it simple: the types we actually use in v1 labs.
+      types:
+        - flow
+        - dns
+        - tls:
+            enabled: yes
+            # Extended gives us sni/ja3/ja4/alpn fields when available.
+            extended: yes
+  - stats:
+      enabled: yes
+      filename: stats.log
+
+# App-layer parsers (make sure TLS is on and seen on 443)
+app-layer:
+  protocols:
+    tls:
+      enabled: yes
+      detection-ports:
+        dp: 443
+
+# We don't need rules for our labs, so skip loading any to speed startup.
+default-rule-path: /etc/suricata/rules
+rule-files: []
+
+# Keep the standard classification/reference files present in the image.
+classification-file: /etc/suricata/classification.config
+reference-config-file: /etc/suricata/reference.config
