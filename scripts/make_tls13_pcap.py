@@ -21,11 +21,15 @@ from scapy.all import IP, TCP, wrpcap  # type: ignore
 
 # ------------------- TLS extension builders -------------------
 
+
 def _ext_sni(hostname: bytes) -> bytes:
     # server_name = name_type(0) + host_name_len + host_name
     server_name = b"\x00" + struct.pack("!H", len(hostname)) + hostname
     server_name_list = struct.pack("!H", len(server_name)) + server_name
-    return struct.pack("!HH", 0x0000, len(server_name_list)) + server_name_list  # type 0x0000
+    return (
+        struct.pack("!HH", 0x0000, len(server_name_list)) + server_name_list
+    )  # type 0x0000
+
 
 def _ext_supported_versions(versions: List[int]) -> bytes:
     # SupportedVersions: 1-byte vector length, then 2-byte versions
@@ -33,27 +37,32 @@ def _ext_supported_versions(versions: List[int]) -> bytes:
     body = struct.pack("!B", len(vbytes)) + vbytes
     return struct.pack("!HH", 0x002B, len(body)) + body  # type 0x002b
 
+
 def _ext_signature_algorithms(algs: List[int]) -> bytes:
     # SignatureSchemeList: 2-byte list length, then 2-byte items
     abytes = b"".join(struct.pack("!H", a) for a in algs)
     body = struct.pack("!H", len(abytes)) + abytes
     return struct.pack("!HH", 0x000D, len(body)) + body  # type 0x000d
 
+
 def _ext_supported_groups(groups: List[int]) -> bytes:
     gbytes = b"".join(struct.pack("!H", g) for g in groups)
     body = struct.pack("!H", len(gbytes)) + gbytes
     return struct.pack("!HH", 0x000A, len(body)) + body  # type 0x000a
+
 
 def _ext_ec_point_formats() -> bytes:
     # ECPointFormats (len=1 list with 'uncompressed'=0)
     body = b"\x01\x00"
     return struct.pack("!HH", 0x000B, len(body)) + body  # type 0x000b
 
+
 def _ext_alpn_client(alpns: List[bytes]) -> bytes:
     # ClientHello ALPN: ProtocolNameList = 2-byte length + repeated (len + name)
     plist = b"".join(bytes([len(p)]) + p for p in alpns)
     body = struct.pack("!H", len(plist)) + plist
     return struct.pack("!HH", 0x0010, len(body)) + body  # type 0x0010
+
 
 def _ext_alpn_server(selected: bytes) -> bytes:
     # ServerHello ALPN also uses a ProtocolNameList but with a single selection
@@ -64,32 +73,37 @@ def _ext_alpn_server(selected: bytes) -> bytes:
 
 # ------------------- Handshake builders -------------------
 
+
 def build_client_hello_bytes(hostname: bytes, alpns: List[bytes]) -> bytes:
     """
     Realistic ClientHello (TLS 1.2) with common ciphers and extensions.
     Record header uses TLS 1.2 (0x0303), handshake version 0x0303.
     """
     # Body
-    body = b"\x03\x03"               # client_version TLS 1.2
-    body += b"\x22" * 32             # random
-    body += b"\x00"                  # session_id length = 0
+    body = b"\x03\x03"  # client_version TLS 1.2
+    body += b"\x22" * 32  # random
+    body += b"\x00"  # session_id length = 0
 
     # Ciphers: include TLS1.3 and common TLS1.2 to look realistic
     ciphers = [0x1301, 0x1302, 0x1303, 0xC02F, 0xC030, 0x009E]
     cs = b"".join(struct.pack("!H", c) for c in ciphers)
     body += struct.pack("!H", len(cs)) + cs
 
-    body += b"\x01\x00"              # compression methods: null
+    body += b"\x01\x00"  # compression methods: null
 
     # Extensions
-    exts = b"".join([
-        _ext_sni(hostname),
-        _ext_supported_versions([0x0304, 0x0303]),       # TLS1.3, TLS1.2
-        _ext_signature_algorithms([0x0804, 0x0403]),     # rsa_pss_rsae_sha256, ecdsa_secp256r1_sha256
-        _ext_supported_groups([0x001D, 0x0017]),         # x25519, secp256r1
-        _ext_ec_point_formats(),
-        _ext_alpn_client(alpns),
-    ])
+    exts = b"".join(
+        [
+            _ext_sni(hostname),
+            _ext_supported_versions([0x0304, 0x0303]),  # TLS1.3, TLS1.2
+            _ext_signature_algorithms(
+                [0x0804, 0x0403]
+            ),  # rsa_pss_rsae_sha256, ecdsa_secp256r1_sha256
+            _ext_supported_groups([0x001D, 0x0017]),  # x25519, secp256r1
+            _ext_ec_point_formats(),
+            _ext_alpn_client(alpns),
+        ]
+    )
     body += struct.pack("!H", len(exts)) + exts
 
     # Handshake header: ClientHello(type=1) + len(3 bytes)
@@ -103,11 +117,11 @@ def build_server_hello_bytes(selected_cipher: int, selected_alpn: bytes) -> byte
     """
     Minimal ServerHello that selects a cipher and ALPN.
     """
-    body = b"\x03\x03"                # server_version TLS 1.2
-    body += b"\x33" * 32              # random
-    body += b"\x00"                   # session_id length = 0
+    body = b"\x03\x03"  # server_version TLS 1.2
+    body += b"\x33" * 32  # random
+    body += b"\x00"  # session_id length = 0
     body += struct.pack("!H", selected_cipher)
-    body += b"\x00"                   # compression method: null
+    body += b"\x00"  # compression method: null
 
     exts = _ext_alpn_server(selected_alpn)
     body += struct.pack("!H", len(exts)) + exts
@@ -119,8 +133,17 @@ def build_server_hello_bytes(selected_cipher: int, selected_alpn: bytes) -> byte
 
 # ------------------- Flow builder -------------------
 
-def emit_flow(pkts: list, t0: float, src: str, sport: int, dst: str, dport: int,
-              ch: bytes, sh: bytes):
+
+def emit_flow(
+    pkts: list,
+    t0: float,
+    src: str,
+    sport: int,
+    dst: str,
+    dport: int,
+    ch: bytes,
+    sh: bytes,
+):
     """
     SYN, SYN/ACK, ACK, ClientHello, ServerHello, final ACK.
     Sequence/ACK arithmetic is correct so Suricata's parser is happy.
@@ -131,18 +154,29 @@ def emit_flow(pkts: list, t0: float, src: str, sport: int, dst: str, dport: int,
     # 1) SYN
     syn = IP(src=src, dst=dst) / TCP(sport=sport, dport=dport, flags="S", seq=ISN)
     # 2) SYN/ACK
-    synack = IP(src=dst, dst=src) / TCP(sport=dport, dport=sport, flags="SA", seq=JSN, ack=ISN + 1)
+    synack = IP(src=dst, dst=src) / TCP(
+        sport=dport, dport=sport, flags="SA", seq=JSN, ack=ISN + 1
+    )
     # 3) ACK
-    ack1 = IP(src=src, dst=dst) / TCP(sport=sport, dport=dport, flags="A", seq=ISN + 1, ack=JSN + 1)
+    ack1 = IP(src=src, dst=dst) / TCP(
+        sport=sport, dport=dport, flags="A", seq=ISN + 1, ack=JSN + 1
+    )
     # 4) ClientHello (PA)
-    chseg = IP(src=src, dst=dst) / TCP(sport=sport, dport=dport, flags="PA",
-                                       seq=ISN + 1, ack=JSN + 1) / ch
+    chseg = (
+        IP(src=src, dst=dst)
+        / TCP(sport=sport, dport=dport, flags="PA", seq=ISN + 1, ack=JSN + 1)
+        / ch
+    )
     # 5) ServerHello (PA), ack the CH payload
-    shseg = IP(src=dst, dst=src) / TCP(sport=dport, dport=sport, flags="PA",
-                                       seq=JSN + 1, ack=ISN + 1 + clen) / sh
+    shseg = (
+        IP(src=dst, dst=src)
+        / TCP(sport=dport, dport=sport, flags="PA", seq=JSN + 1, ack=ISN + 1 + clen)
+        / sh
+    )
     # 6) Final ACK from client (no payload)
-    ack2 = IP(src=src, dst=dst) / TCP(sport=sport, dport=dport, flags="A",
-                                      seq=ISN + 1 + clen, ack=JSN + 1 + slen)
+    ack2 = IP(src=src, dst=dst) / TCP(
+        sport=sport, dport=dport, flags="A", seq=ISN + 1 + clen, ack=JSN + 1 + slen
+    )
 
     syn.time = t0
     synack.time = t0 + 0.001
@@ -156,15 +190,16 @@ def emit_flow(pkts: list, t0: float, src: str, sport: int, dst: str, dport: int,
 
 # ------------------- Main -------------------
 
+
 def main(out_path: Path):
     base = 1_700_001_200.0
     pkts = []
 
     # (ALPNs, count, client subnet, server IP, SNI)
     profiles = [
-        ([b"h2"],          12, "192.0.2.",    "203.0.113.10", b"api.example.test"),
-        ([b"http/1.1"],     8, "192.0.2.",    "203.0.113.20", b"www.example.test"),
-        ([b"acme-tls/1"],   2, "198.51.100.", "203.0.113.30", b"acme.example.test"),
+        ([b"h2"], 12, "192.0.2.", "203.0.113.10", b"api.example.test"),
+        ([b"http/1.1"], 8, "192.0.2.", "203.0.113.20", b"www.example.test"),
+        ([b"acme-tls/1"], 2, "198.51.100.", "203.0.113.30", b"acme.example.test"),
     ]
 
     t = base
@@ -190,6 +225,9 @@ def main(out_path: Path):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python3 scripts/make_tls13_pcap.py pcaps/input.pcap", file=sys.stderr)
+        print(
+            "Usage: python3 scripts/make_tls13_pcap.py pcaps/input.pcap",
+            file=sys.stderr,
+        )
         sys.exit(2)
     main(Path(sys.argv[1]))
