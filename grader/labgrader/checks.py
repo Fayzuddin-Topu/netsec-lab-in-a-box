@@ -1,6 +1,6 @@
 from collections import defaultdict
 from statistics import mean, pstdev
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from pathlib import Path
 import json
 
@@ -248,5 +248,219 @@ def grade_tls_alpn_answers(log_dir: Path, answers: Dict, rubric: Dict) -> Dict:
             "threshold": threshold,
             "expected_anomalies": anomalies,
             "student": student,
+        },
+    }
+
+
+# --- Lab 03: DNS exfiltration (Zeek) -----------------------------------------
+
+
+def grade_dns_exfil(
+    log_dir: Path,
+    answers: Dict,
+    rubric: Dict,
+    lab_dir: Optional[Path] = None,
+) -> Dict:
+    """
+    Grade Lab 03 using Zeek dns.log.
+
+    Inputs:
+      - log_dir: Path to ./logs (expects logs/zeek/dns.log)
+      - answers: dict loaded from answers.yml (expects 'suspect_rrnames': list[str])
+      - rubric: dict loaded from labs/03_dns_exfil/rubric.yml
+         checks:
+           expected_suffixes: [list of domain suffixes to match]
+           accept_by_suffix: true
+           entropy_threshold: 3.2
+           entropy_tolerance: 0.3
+           label_count_min: 8
+           max_label_len_min: 40
+           txt_ratio_min: 0.20
+           nxdomain_ratio_min: 0.50
+           require_entropy_evidence: true
+         grading:
+           per_item_points: 50
+           pass_threshold: 80
+           required_count: 2
+      - lab_dir: optional, used to read expected/summary.json if rubric has no expected list
+
+    Returns:
+      dict: {"score": float, "passed": bool, "details": {...}}
+    """
+    import math
+    import re
+    import json
+    from collections import Counter, defaultdict
+
+    # ---------- helpers ----------
+    def _canon(name: str) -> str:
+        if not name:
+            return name
+        s = name.strip().lower()
+        return s if s.endswith(".") else s + "."
+
+    def _entropy(s: str) -> float:
+        if not s:
+            return 0.0
+        freq = Counter(s)
+        n = len(s)
+        return -sum((c / n) * math.log2(c / n) for c in freq.values() if c)
+
+    def _suffix_match(candidate: str, expected_suffix: str) -> bool:
+        c = _canon(candidate)
+        e = _canon(expected_suffix)
+        return c.endswith(e)
+
+    def _collect_metrics(rows):
+        per = defaultdict(
+            lambda: {
+                "total": 0,
+                "txt": 0,
+                "nx": 0,
+                "len": 0,
+                "labels": 0,
+                "max_label": 0,
+                "entropy": 0.0,
+            }
+        )
+        for r in rows:
+            qname = _canon(r.get("query", ""))
+            if not qname:
+                continue
+            qtype = r.get("qtype_name") or r.get("qtype")
+            rcode = (r.get("rcode_name") or r.get("rcode") or "").upper()
+            per[qname]["total"] += 1
+            if str(qtype).upper() == "TXT" or str(qtype) == "16":
+                per[qname]["txt"] += 1
+            if rcode == "NXDOMAIN" or rcode == "3":
+                per[qname]["nx"] += 1
+            labels = qname.rstrip(".").split(".")
+            per[qname]["len"] = max(per[qname]["len"], len(qname))
+            per[qname]["labels"] = max(per[qname]["labels"], len(labels))
+            per[qname]["max_label"] = max(
+                per[qname]["max_label"], max(len(lab) for lab in labels)
+            )
+            clean = re.sub(r"[^a-z0-9]", "", qname.lower())
+            per[qname]["entropy"] = _entropy(clean)
+        return per
+
+    # ---------- load data ----------
+    dns_log = log_dir / "zeek" / "dns.log"
+    rows = list(_iter_zeek_tsv(dns_log))  # reuses your existing helper
+    if not rows:
+        return {
+            "score": 0,
+            "passed": False,
+            "details": {
+                "reason": "no_dns_rows",
+                "path": str(dns_log),
+            },
+        }
+
+    # rubric defaults (safe fallbacks)
+    checks = {
+        "expected_suffixes": [],
+        "accept_by_suffix": True,
+        "entropy_threshold": 3.2,
+        "entropy_tolerance": 0.3,
+        "max_label_len_min": 40,
+        "label_count_min": 8,
+        "txt_ratio_min": 0.20,
+        "nxdomain_ratio_min": 0.50,
+        "require_entropy_evidence": True,
+        "required_count": 1,
+    }
+    checks.update(rubric.get("checks", {}))
+
+    grading = {
+        "per_item_points": 50,
+        "pass_threshold": 80,
+    }
+    grading.update(rubric.get("grading", {}))
+
+    expected = list(map(_canon, checks.get("expected_suffixes") or []))
+    if not expected and lab_dir:
+        # Optional fallback: labs/03_dns_exfil/expected/summary.json
+        sfile = Path(lab_dir) / "expected" / "summary.json"
+        if sfile.exists():
+            try:
+                summary = json.loads(sfile.read_text())
+                exp = summary.get("expected_domains", [])
+                if isinstance(exp, list):
+                    expected = list(map(_canon, exp))
+            except Exception:
+                pass
+
+    student = list(map(_canon, (answers or {}).get("suspect_rrnames", [])))
+    if not student:
+        return {
+            "score": 0,
+            "passed": False,
+            "details": {"reason": "answers_missing_suspect_rrnames"},
+        }
+
+    per = _collect_metrics(rows)
+
+    # Entropy/shape evidence gate: at least one student item should look exfil-like
+    ent_thresh = checks["entropy_threshold"] - checks["entropy_tolerance"]
+
+    def _looks_exfil(m):
+        total = max(1, int(m["total"]))
+        return (
+            m["max_label"] >= checks["max_label_len_min"]
+            or m["labels"] >= checks["label_count_min"]
+            or (m["txt"] / total) >= checks["txt_ratio_min"]
+            or (m["nx"] / total) >= checks["nxdomain_ratio_min"]
+            or m["entropy"] >= ent_thresh
+        )
+
+    ent_ok = False
+    for s in student:
+        m = per.get(_canon(s))
+        if not m:
+            # suffix match to metrics, if student gave a subdomain
+            hits = [k for k in per.keys() if _suffix_match(k, s)]
+            if hits:
+                m = per[hits[0]]
+        if m and _looks_exfil(m):
+            ent_ok = True
+            break
+
+    # name matching against expected suffixes
+    correct = 0
+    missing = []
+    if expected:
+        for exp in expected:
+            if any(_suffix_match(s, exp) for s in student):
+                correct += 1
+            else:
+                missing.append(exp)
+
+    # score & pass
+    score = grading["per_item_points"] * correct
+    required_count = int(checks.get("required_count", 1))
+    pass_by_count = correct >= required_count
+    pass_by_score = score >= grading["pass_threshold"]
+    passed = (pass_by_count or pass_by_score) and (
+        (not checks["require_entropy_evidence"]) or ent_ok
+    )
+
+    # small preview of grader-suspects for hints
+    grader_suspects = []
+    for name, m in per.items():
+        if _looks_exfil(m):
+            grader_suspects.append((name, m["entropy"], m["max_label"]))
+    grader_suspects.sort(key=lambda x: (-x[1], -x[2]))
+    grader_suspects = [g[0] for g in grader_suspects[:6]]
+
+    return {
+        "score": float(score),
+        "passed": bool(passed),
+        "details": {
+            "student_count": len(student),
+            "expected_suffixes": expected,
+            "missing_expected": missing,
+            "entropy_condition_met": ent_ok,
+            "examples": grader_suspects,
         },
     }

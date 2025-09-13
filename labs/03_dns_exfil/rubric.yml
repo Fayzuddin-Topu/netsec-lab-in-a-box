@@ -1,0 +1,23 @@
+checks:
+  # Put the canonical suspicious domain suffixes here (examples below).
+  # The grader will accept any student RRname that suffix-matches one of these.
+  expected_suffixes:
+    - "exfil.lab.test"
+    - "deep.lab.test"
+  accept_by_suffix: true
+
+  # Shape/evidence thresholds
+  entropy_threshold: 3.2
+  entropy_tolerance: 0.3
+  label_count_min: 8
+  max_label_len_min: 40
+  txt_ratio_min: 0.20
+  nxdomain_ratio_min: 0.50
+  require_entropy_evidence: true
+
+  # How many expected items must the student hit
+  required_count: 2
+
+grading:
+  per_item_points: 50
+  pass_threshold: 80

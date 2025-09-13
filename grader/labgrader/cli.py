@@ -7,7 +7,7 @@ import yaml
 from jsonschema import Draft202012Validator
 
 from .io import load_conn_log
-from .checks import grade_beacon_answers, grade_tls_alpn_answers
+from .checks import grade_beacon_answers, grade_tls_alpn_answers, grade_dns_exfil
 
 
 def _load_yaml(p: Path):
@@ -50,6 +50,10 @@ def main():
     elif lab_name == "02_tls13_fingerprints":
         rubric = yaml.safe_load((lab / "rubric.yml").read_text())
         res = grade_tls_alpn_answers(logs_dir, answers, rubric)
+
+    elif lab_name == "03_dns_exfil":
+        rubric = yaml.safe_load((lab / "rubric.yml").read_text())
+        res = grade_dns_exfil(logs_dir, answers, rubric, lab)
 
     else:
         print(f"Unsupported lab: {lab_name}", file=sys.stderr)

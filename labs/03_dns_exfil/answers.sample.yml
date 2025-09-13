@@ -1,0 +1,5 @@
+suspect_rrnames:
+  - "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.exfil.lab.test."
+  - "a1.a2.a3.a4.a5.a6.a7.a8.deep.lab.test."
+  - "large-txt.data.test."
+  - "k3j9qv7apd0zmxwq2y8n3b5.dga.lab.test."

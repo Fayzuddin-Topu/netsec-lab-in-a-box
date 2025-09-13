@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["suspect_rrnames"],
+  "properties": {
+    "suspect_rrnames": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}
