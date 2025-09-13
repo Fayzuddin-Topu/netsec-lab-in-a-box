@@ -1,19 +1,21 @@
 {
-  "score": 100,
+  "score": 100.0,
   "passed": true,
   "details": {
-    "source": "zeek_ssl",
-    "alpn_counts": {
-      "acme-tls/1": 2,
-      "http/1.1": 8,
-      "h2": 12
-    },
-    "threshold": 0.15,
-    "expected_anomalies": [
-      "acme-tls/1"
+    "student_count": 4,
+    "expected_suffixes": [
+      "exfil.lab.test.",
+      "deep.lab.test."
     ],
-    "student": [
-      "acme-tls/1"
+    "missing_expected": [],
+    "entropy_condition_met": true,
+    "examples": [
+      "k3j9qv7apd0zmxwq2y8n3b5.dga.lab.test.",
+      "a1.a2.a3.a4.a5.a6.a7.a8.deep.lab.test.",
+      "opensearch.org.",
+      "www.suricata.io.",
+      "www.example.com.",
+      "large-txt.data.test."
     ]
   }
 }
